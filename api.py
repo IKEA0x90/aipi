@@ -31,5 +31,5 @@ def create_app(event_bus):
             request_id
         )
         return await event_bus.response_queues[request_id].get()
-    
+    	
     return app
