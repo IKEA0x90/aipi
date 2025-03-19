@@ -1,30 +1,35 @@
-from fastapi import FastAPI, HTTPException
+import uuid
+from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
-app = FastAPI()
+class MessageModel(BaseModel):
+    message: str
 
-class SingleMessage:
+def create_app(event_bus):
+    app = FastAPI()
     
-
-# Sample in-memory database
-items_db = []
-
-@app.get("/items", response_model=List[Item])
-async def get_items():
-    """Get all items"""
-    return items_db
-
-@app.get("/items/{item_id}", response_model=Item)
-async def get_item(item_id: int):
-    """Get a specific item by ID"""
-    item = next((item for item in items_db if item.id == item_id), None)
-    if item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
-
-@app.post("/items", response_model=Item, status_code=201)
-async def create_item(item: Item):
-    """Create a new item"""
-    items_db.append(item)
-    return item
+    @app.post("/assistants/{uid}")
+    async def create_assistant(uid: str):
+        request_id = str(uuid.uuid4())
+        await event_bus.publish("create_user_assistant", uid, request_id)
+        return await event_bus.response_queues[request_id].get()
+    
+    # {uid} will be a mandatory path parameter, {aid:str?} marks an optional url parameter.
+    @app.post("/assistants/{uid}")
+    async def send_single_message(
+        uid: str, 
+        message: str,
+        # this line of code not only defines AID, it also tells FastAPI to check for query parameter aid.
+        aid: Optional[str] = None
+    ):
+        request_id = str(uuid.uuid4())
+        await event_bus.publish("send_single_message",
+                {
+                    "message": message
+                }, 
+            request_id
+        )
+        return await event_bus.response_queues[request_id].get()
+    
+    return app
