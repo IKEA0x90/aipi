@@ -1,7 +1,6 @@
 import os
 import openai
 import uuid
-from typing import Dict, Any
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
@@ -33,10 +32,10 @@ class AIHandler:
             case _:
                 return None
     
-    async def _create_user_assistant(self, message):
+    async def _create_user_assistant(self, uid):
         # AI assistant creation logic
         pass
     
-    async def _send_single_message(self, message):
+    async def _send_single_message(self, uid, aid, message):
         # Chat handling logic
         pass
